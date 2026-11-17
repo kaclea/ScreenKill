@@ -1,0 +1,51 @@
+#!/system/bin/sh
+# tvoff - infrared kill switch
+#
+#   tvoff          domestic payloads (37)
+#   tvoff quick    changhong true code only (0.3s)
+#   tvoff full     global payloads (89)
+#   tvoff scan     256-address sweep
+#   tvoff quiet N  emit payload #N only
+#   tvoff stop     halt
+
+TBASE=/data/local/tmp/irtool
+DEX=/data/local/tmp/irblast.dex
+ARGV=$TBASE/tmp/tvoff_args.txt
+
+if [ ! -f "$DEX" ]; then echo "ERR: emitter missing ($DEX)"; exit 1; fi
+UID_OUT=$(su -c "id -u" 2>/dev/null | tr -d '\r\n ')
+if [ "$UID_OUT" != "0" ]; then
+  echo "ERR: no root access"
+  echo "     run tvrestore.sh from host after reboot"
+  exit 1
+fi
+
+case "$1" in
+  stop|--stop)
+      su -c "pkill -9 -f IrBlast 2>/dev/null" >/dev/null 2>&1
+      echo "halted"; exit 0 ;;
+
+  quick|q)   SRC=$TBASE/changhong.txt;    N="changhong signature" ;;
+  full|f)    SRC=$TBASE/flipper_full.txt; N="global set" ;;
+  scan|s)    SRC=$TBASE/cn_pwr.txt;       N="full sweep" ;;
+
+  quiet)
+      IDX=${2:-0}
+      ARGV=$TBASE/tmp/one.txt
+      sed -n "$((IDX+1))p" $TBASE/cn_final.txt | awk -F'|' '{printf "%s %s", $2, $3}' > "$ARGV"
+      su -c "CLASSPATH=/data/local/tmp/irblast.dex app_process /system/bin IrBlast \$(cat $ARGV)" 2>&1 | tail -1
+      rm -f "$ARGV"; exit 0 ;;
+
+  *)         SRC=$TBASE/cn_final.txt;     N="domestic set" ;;
+esac
+
+[ -f "$SRC" ] || { echo "ERR: payload file missing ($SRC)"; exit 1; }
+mkdir -p "$TBASE/tmp" 2>/dev/null
+
+awk -F'|' '{printf "\"%s:%s\" %s ", $1, $2, $3}' "$SRC" > "$ARGV"
+
+echo "=== FIRING - $N ==="
+echo "aim at target, within 3m"
+echo
+su -c "CLASSPATH=$DEX app_process /system/bin IrBlast --gap 100 $(cat "$ARGV")" 2>&1
+rm -f "$ARGV"
