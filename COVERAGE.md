@@ -2,6 +2,27 @@
 
 **89 payloads**, parsed from **370 Power codes** across **106 brands**.
 
+
+## Domestic quick set (40 codes) — `tvoff fast`
+
+The default `tvoff` runs 89 codes. `tvoff fast` runs a leaner 40-code set tuned
+for Chinese TVs:
+
+| # | Code | Protocol | Freq | Notes |
+|---|---|---|---|---|
+| 1 | `CHANGHONG_TV` | NEC 0x40/0x12 | 37500Hz | **captured live, verified** |
+| 2 | `AOC_TV` | NECext 0x00BD/0x01FE | 38000Hz | from probonopd/irdb |
+| 3 | `KONKA_1` | raw 88v (Aiwa) | 38000Hz | **synthesized, UNTESTED** |
+| 4 | `KONKA_2` | raw 88v (Aiwa) | 38000Hz | **synthesized, UNTESTED** |
+| 5-26 | `NEC_xx_xx` ×22 | NEC | 37500Hz | real (addr,cmd) combos from 105 codes |
+| 27-31 | `Hisense_*` ×5 | NECext / raw | 38000Hz | Flipper-IRDB |
+| 32-34 | `TCL_*` ×3 | NECext / RCA | 38000/56000Hz | Flipper-IRDB |
+| 35-40 | BBK, Blitzwolf, Apex, Element, Sceptre, PrismPlus | mixed | mixed | Flipper-IRDB |
+
+**Konka warning**: those two payloads were synthesized from the Aiwa (Sanyo
+LC7461) protocol spec, never verified against real hardware. If you have a
+Konka TV, test `tvoff` payload 3 and 4 individually first.
+
 ## By protocol
 
 | Protocol | Payloads | Total models |

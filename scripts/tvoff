@@ -26,8 +26,8 @@ case "$1" in
       echo "halted"; exit 0 ;;
 
   quick|q)   SRC=$TBASE/changhong.txt;    N="changhong signature" ;;
-  fast|37)   SRC=$TBASE/cn_final.txt;     N="domestic quick set (37)" ;;
-  scan|s)    SRC=$TBASE/cn_pwr.txt;       N="full sweep (256)" ;;
+  fast|37)   SRC=$TBASE/cn_final.txt;     N="domestic quick set" ;;
+  scan|s)    SRC=$TBASE/cn_pwr.txt;       N="address sweep" ;;
 
   quiet)
       IDX=${2:-0}
@@ -36,7 +36,7 @@ case "$1" in
       su -c "CLASSPATH=/data/local/tmp/irblast.dex app_process /system/bin IrBlast \$(cat $ARGV)" 2>&1 | tail -1
       rm -f "$ARGV"; exit 0 ;;
 
-  *)         SRC=$TBASE/flipper_full.txt; N="full set (89)" ;;
+  *)         SRC=$TBASE/flipper_full.txt; N="full set" ;;
 esac
 
 [ -f "$SRC" ] || { echo "ERR: payload file missing ($SRC)"; exit 1; }
@@ -44,7 +44,8 @@ mkdir -p "$TBASE/tmp" 2>/dev/null
 
 awk -F'|' '{printf "\"%s:%s\" %s ", $1, $2, $3}' "$SRC" > "$ARGV"
 
-echo "=== FIRING - $N ==="
+CNT=$(wc -l < "$SRC")
+echo "=== FIRING - $N ($CNT codes) ==="
 echo "aim at target, within 3m"
 echo
 su -c "CLASSPATH=$DEX app_process /system/bin IrBlast --gap 100 $(cat "$ARGV")" 2>&1
