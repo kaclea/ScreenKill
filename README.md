@@ -82,6 +82,23 @@ faster per frame (11ms short-frame floor vs ~200ms with `service call`).
 That speed matters when you're sweeping 37 codes in the time a normal app
 sends 5.
 
+## Performance
+
+The obvious implementation — loop over payloads, one process per payload —
+costs ~1.9s per payload because each iteration spawns `su` → `sh` → `awk` →
+`su` → `app_process` (JVM boot). 37 payloads = **70 seconds**.
+
+Passing all payloads to a single `app_process` invocation drops it to
+**8.2 seconds** — the JVM boots once, then frames are emitted back to back.
+
+```
+$ tvoff
+=== FIRING - domestic set ===
+  [ 1/37] CHANGHONG_TV     37500Hz  68v  108ms
+  ...
+DONE: 37 ok / 0 fail / 37 total in 8.2s
+```
+
 ## How the codes were obtained
 
 1. **Flipper-IRDB** — 370 power codes parsed, 8 protocols reimplemented
