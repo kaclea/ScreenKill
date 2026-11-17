@@ -1,0 +1,113 @@
+#!/data/data/com.termux/files/usr/bin/bash
+# tvbg - infrared emitter (11ms short-frame floor, pure Termux + binder)
+#
+#   tvbg --quick    92 TV codes (NEC + KASEIKYO), ~1-2s
+#   tvbg            190 TV-B-Gone true codes, ~3s
+#   tvbg --nec      67 NEC codes
+#   tvbg --ac-on    AC power on (captured frame)
+#   tvbg --ac-off   AC power off
+#   tvbg -n N       emit code #N only
+#   tvbg --list     list TV codes
+#   tvbg --stop     halt
+
+TBASE=/data/data/com.termux/files/usr
+STOPFLAG=$TBASE/tmp/tvbg.stop
+CODEFILE=$TBASE/share/tvbg/codes.txt
+QUICKFILE=$TBASE/share/tvbg/codes_quick.txt
+ACCAP=$TBASE/share/tvbg/ac_captured.txt
+DEX=/data/local/tmp/irblast.dex
+TMPF=$TBASE/tmp/tvbg_args.txt
+
+blast() {
+    local f=$1
+    [ -f "$f" ] || { echo "ERR: args file missing ($f)"; return 1; }
+    local n=$(wc -l < "$f")
+    if [ "$n" -eq 0 ]; then echo "ERR: empty"; return 1; fi
+    local args=$(tr '\n' ' ' < "$f")
+    su -c "CLASSPATH=$DEX app_process /system/bin IrBlast $args" 2>&1 | tail -1
+}
+
+mkargs() {
+    local src=$1 filter=$2 out=$3
+    : > "$out"
+    local i=0
+    while IFS='|' read -r NAME F P; do
+        [ "$filter" = "nec" ] && {
+            f1=$(echo "$P" | cut -d, -f1); f2=$(echo "$P" | cut -d, -f2)
+            [ "$f1" -lt 8000 ] || [ "$f1" -gt 10000 ] && continue
+            [ "$f2" -lt 4000 ] || [ "$f2" -gt 5000 ] && continue
+        }
+        echo "$F $P" >> "$out"
+        i=$((i+1))
+    done < "$src"
+    echo "$i"
+}
+
+case "$1" in
+  --stop|-x)
+      touch "$STOPFLAG" 2>/dev/null
+      su -c "pkill -9 -f IrBlast 2>/dev/null" >/dev/null 2>&1
+      echo "halted"; exit 0 ;;
+
+  --test)
+      echo "38000 3390,1640,407,466,407,466,400,1000" > "$TMPF"
+      echo "test frame"
+      blast "$TMPF"
+      exit 0 ;;
+
+  --ac-on|--on)
+      L=$(grep -m1 '^AC_ON|' "$ACCAP" 2>/dev/null)
+      [ -z "$L" ] && { echo "ERR: no AC frame"; exit 1; }
+      IFS='|' read -r NM F P <<< "$L"
+      echo "$F $P" > "$TMPF"
+      echo "AC power on"
+      blast "$TMPF"
+      exit 0 ;;
+
+  --ac-off|--off)
+      L=$(grep -m1 '^AC_OFF|' "$ACCAP" 2>/dev/null)
+      if [ -z "$L" ]; then echo "ERR: no AC off frame captured"; exit 1; fi
+      IFS='|' read -r NM F P <<< "$L"
+      echo "$F $P" > "$TMPF"
+      echo "AC power off"
+      blast "$TMPF"
+      exit 0 ;;
+
+  --list)
+      i=0
+      while IFS='|' read -r NAME F P; do
+          printf "%3d. %-14s %6sHz  %d values\n" "$i" "$NAME" "$F" "$(echo $P | tr ',' ' ' | wc -w)"
+          i=$((i+1))
+      done < "${CODEFILE:-/dev/null}"
+      exit 0 ;;
+
+  -n)
+      IDX=${2:-0}
+      L=$(sed -n "$((IDX+1))p" "${CODEFILE}")
+      IFS='|' read -r NAME F P <<< "$L"
+      echo "code $IDX: $NAME  ${F}Hz"
+      echo "$F $P" > "$TMPF"
+      blast "$TMPF"
+      exit 0 ;;
+
+  --quick|-q)
+      SRC="$QUICKFILE"; LABEL="92 codes (NEC+KASEIKYO)" ;;
+  --nec)
+      SRC="$CODEFILE"; LABEL="NEC"; NECONLY=1 ;;
+  *)
+      SRC="$CODEFILE"; LABEL="190 codes (all protocols)" ;;
+esac
+
+[ -f "$SRC" ] || { echo "ERR: payload file missing ($SRC)"; exit 1; }
+mkdir -p "$TBASE/tmp"
+
+if [ "$NECONLY" = "1" ]; then
+    N=$(mkargs "$SRC" nec "$TMPF")
+else
+    N=$(mkargs "$SRC" "" "$TMPF")
+fi
+
+echo "=== $LABEL - $N codes ==="
+echo "aim at target, within 3m"
+blast "$TMPF"
+rm -f "$TMPF"
