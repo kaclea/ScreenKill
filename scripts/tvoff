@@ -1,10 +1,10 @@
 #!/system/bin/sh
 # tvoff - infrared kill switch
 #
-#   tvoff          domestic payloads (37)
+#   tvoff          full set (89 codes, ~18s)
+#   tvoff fast     domestic quick set (37 codes, ~8s)
 #   tvoff quick    changhong true code only (0.3s)
-#   tvoff full     global payloads (89)
-#   tvoff scan     256-address sweep
+#   tvoff scan     256-address NEC sweep (~20s)
 #   tvoff quiet N  emit payload #N only
 #   tvoff stop     halt
 
@@ -26,8 +26,8 @@ case "$1" in
       echo "halted"; exit 0 ;;
 
   quick|q)   SRC=$TBASE/changhong.txt;    N="changhong signature" ;;
-  full|f)    SRC=$TBASE/flipper_full.txt; N="global set" ;;
-  scan|s)    SRC=$TBASE/cn_pwr.txt;       N="full sweep" ;;
+  fast|37)   SRC=$TBASE/cn_final.txt;     N="domestic quick set (37)" ;;
+  scan|s)    SRC=$TBASE/cn_pwr.txt;       N="full sweep (256)" ;;
 
   quiet)
       IDX=${2:-0}
@@ -36,7 +36,7 @@ case "$1" in
       su -c "CLASSPATH=/data/local/tmp/irblast.dex app_process /system/bin IrBlast \$(cat $ARGV)" 2>&1 | tail -1
       rm -f "$ARGV"; exit 0 ;;
 
-  *)         SRC=$TBASE/cn_final.txt;     N="domestic set" ;;
+  *)         SRC=$TBASE/flipper_full.txt; N="full set (89)" ;;
 esac
 
 [ -f "$SRC" ] || { echo "ERR: payload file missing ($SRC)"; exit 1; }

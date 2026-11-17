@@ -27,9 +27,10 @@ captured live signatures.
 
 | Command | Payloads | Time |
 |---|---|---|
-| `tvoff` | 37 domestic | ~8s |
+| `tvoff` | **89 full set** | ~22s |
+| `tvoff fast` | 37 domestic quick | ~8s |
 | `tvoff quick` | 1 (Changhong true code) | 0.3s |
-| `tvoff full` | 89 global | ~18s |
+| `tvoff scan` | 256-address NEC sweep | ~20s |
 | `tvoff scan` | 256-address NEC sweep | ~20s |
 | `tvoff quiet N` | payload #N only | 0.1s |
 
