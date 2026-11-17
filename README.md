@@ -1,11 +1,11 @@
-# TV-DANG
+# ScreenKill
 
 Infrared kill switch for Android. One tap, target goes dark.
 
 ```
 ● STANDBY
 
-TV-DANG
+ScreenKill
 SIGNAL  TERMINATOR
 
 ┌────────────────────────────┐
@@ -33,6 +33,20 @@ captured live signatures.
 | `tvoff scan` | 256-address NEC sweep | ~20s |
 | `tvoff quiet N` | payload #N only | 0.1s |
 
+Sample output:
+
+```
+=== FIRING - domestic set ===
+aim at target, within 3m
+
+  [ 1/37] CHANGHONG_TV     37500Hz  68v  108ms
+  [ 2/37] NEC_04_08        37500Hz  67v   70ms
+  [ 3/37] NEC_40_12        37500Hz  67v   70ms
+  ...
+
+DONE: 37 ok / 0 fail / 37 total in 8.3s
+```
+
 ## Requirements
 
 - Root (Magisk). Temporary root works.
@@ -56,7 +70,7 @@ adb shell 'su -c "
 "'
 
 # optional GUI
-adb install apk/TV-DANG.apk
+adb install apk/ScreenKill.apk
 ```
 
 ## Why not just use an app
@@ -111,7 +125,7 @@ payloads/changhong.txt Changhong true signature
 payloads/flipper_full.txt  global set
 payloads/cn_pwr.txt    256-address sweep
 payloads/ac_captured.txt  Hisense AC signature
-apk/TV-DANG.apk        GUI
+apk/ScreenKill.apk        GUI
 apk/irblast.dex        binder emitter (11ms/frame)
 ```
 
